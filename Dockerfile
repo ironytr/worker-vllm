@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.8.1-devel-ubuntu22.04
+FROM nvidia/cuda:12.9.1-devel-ubuntu22.04
 
 RUN apt-get update -y \
     && apt-get install -y python3-pip curl git \
@@ -6,15 +6,19 @@ RUN apt-get update -y \
 
 ENV PATH="/root/.local/bin:$PATH"
 
-RUN ldconfig /usr/local/cuda-12.8/compat/
+RUN ldconfig /usr/local/cuda-12.9/compat/
 
-# Install vLLM NIGHTLY directly (required for gemma-4-E4B / qwen3.5 model support) with FlashInfer.
+# Install vLLM NIGHTLY directly (required for gemma-4-E4B / qwen3.5 model support).
+# Indexes/strategy match the official vLLM Gemma 4 recipe (CUDA 12.9 nightly + cu129 torch):
+#   https://docs.vllm.ai/projects/recipes/en/latest/Google/Gemma4.html
 # Nightly is hardcoded (not a build ARG) because RunPod's GitHub build does not pass --build-arg.
 # DeepGEMM compile removed: it needs a long source build (RunPod has a 30-min build limit and no
 # GPU at build time) and is disabled by default (VLLM_USE_DEEP_GEMM=0), so the target models don't need it.
 RUN uv pip install --system "packaging>=24.2" && \
-    uv pip install --system --pre "vllm[flashinfer]" \
-        --extra-index-url https://wheels.vllm.ai/nightly
+    uv pip install --system -U vllm --pre \
+        --extra-index-url https://wheels.vllm.ai/nightly/cu129 \
+        --extra-index-url https://download.pytorch.org/whl/cu129 \
+        --index-strategy unsafe-best-match
 
 # Install additional Python dependencies (after vLLM to avoid PyTorch version conflicts)
 COPY builder/requirements.txt /requirements.txt
