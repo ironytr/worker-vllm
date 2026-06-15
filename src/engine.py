@@ -25,7 +25,7 @@ from vllm.entrypoints.serve.render.serving import OpenAIServingRender
 
 from constants import DEFAULT_BATCH_SIZE, DEFAULT_BATCH_SIZE_GROWTH_FACTOR, DEFAULT_MAX_CONCURRENCY, DEFAULT_MIN_BATCH_SIZE
 from engine_args import get_engine_args
-from tokenizer import TokenizerWrapper
+from tokenizer import TokenizerWrapper, load_chat_template
 from utils import BatchSize, DummyRequest, JobInput, create_error_response
 
 class vLLMEngine:
@@ -83,7 +83,7 @@ class vLLMEngine:
                 class MinimalTokenizerWrapper:
                     def __init__(self, tokenizer):
                         self.tokenizer = tokenizer
-                        self.custom_chat_template = os.getenv("CUSTOM_CHAT_TEMPLATE")
+                        self.custom_chat_template = load_chat_template(os.getenv("CUSTOM_CHAT_TEMPLATE"))
                         self.has_chat_template = bool(self.tokenizer.chat_template) or bool(self.custom_chat_template)
                         if self.custom_chat_template and isinstance(self.custom_chat_template, str):
                             self.tokenizer.chat_template = self.custom_chat_template

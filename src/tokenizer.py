@@ -4,11 +4,25 @@ from typing import Union
 
 from transformers import AutoTokenizer
 
+
+def load_chat_template(value):
+    """CUSTOM_CHAT_TEMPLATE may be either a raw Jinja string or a path to a
+    .jinja file baked into the image (e.g. the Gemma 4 tool template). If it
+    points at an existing file, read and return its contents; otherwise return
+    the value unchanged so inline templates still work."""
+    if value and os.path.isfile(value):
+        with open(value, "r", encoding="utf-8") as f:
+            template = f.read()
+        logging.info("Loaded chat template from file: %s (%d chars)", value, len(template))
+        return template
+    return value
+
+
 class TokenizerWrapper:
     def __init__(self, tokenizer_name_or_path, tokenizer_revision, trust_remote_code):
         logging.debug("tokenizer_name_or_path: %s, tokenizer_revision: %s, trust_remote_code: %s", tokenizer_name_or_path, tokenizer_revision, trust_remote_code)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, revision=tokenizer_revision or "main", trust_remote_code=trust_remote_code)
-        self.custom_chat_template = os.getenv("CUSTOM_CHAT_TEMPLATE")
+        self.custom_chat_template = load_chat_template(os.getenv("CUSTOM_CHAT_TEMPLATE"))
         self.has_chat_template = bool(self.tokenizer.chat_template) or bool(self.custom_chat_template)
         if self.custom_chat_template and isinstance(self.custom_chat_template, str):
             self.tokenizer.chat_template = self.custom_chat_template

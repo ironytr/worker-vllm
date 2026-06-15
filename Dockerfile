@@ -60,6 +60,11 @@ ENV PYTHONPATH="/:/vllm-workspace"
 # any PyPI release. Installed LAST so it wins over the transformers pulled by requirements.txt.
 RUN uv pip install --system -U git+https://github.com/huggingface/transformers.git
 
+# Bake the official vLLM Gemma 4 tool-calling chat template so agentic tool calls render
+# correctly (the model's default template does not emit tool definitions). Enable it at
+# runtime with CUSTOM_CHAT_TEMPLATE=/templates/tool_chat_template_gemma4.jinja
+ADD https://raw.githubusercontent.com/vllm-project/vllm/main/examples/tool_chat_template_gemma4.jinja /templates/tool_chat_template_gemma4.jinja
+
 COPY src /src
 RUN chmod +x /src/start.sh
 RUN --mount=type=secret,id=HF_TOKEN,required=false \
