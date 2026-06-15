@@ -542,8 +542,11 @@ class OpenAIvLLMEngine(vLLMEngine):
             return
 
         if isinstance(response, ErrorResponse):
-            error_type = getattr(response, "type", "internal_error")
-            error_message = getattr(response, "message", "Unknown error")
+            # vLLM's ErrorResponse nests details under .error (ErrorInfo); the type/message
+            # are no longer top-level attributes, so read them from .error.
+            err_info = getattr(response, "error", None)
+            error_type = getattr(err_info, "type", None) or "internal_error"
+            error_message = getattr(err_info, "message", None) or "Unknown error"
             yield AnthropicErrorResponse(
                 error=AnthropicError(type=error_type, message=error_message)
             ).model_dump()
